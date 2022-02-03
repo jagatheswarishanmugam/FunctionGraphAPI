@@ -33,6 +33,10 @@ namespace FunctionGraphAPI
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<GraphNotification>(requestBody);
+            foreach (var notification in data.value)
+            {
+                log.LogInformation($"Received notification: '{notification.Resource}', {notification.Id}");
+            }
 
             if (!data.value.FirstOrDefault().ClientState.Equals("SecretClientState", StringComparison.OrdinalIgnoreCase))
             {
