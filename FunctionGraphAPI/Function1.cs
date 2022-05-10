@@ -35,7 +35,16 @@ namespace FunctionGraphAPI
             var data = JsonConvert.DeserializeObject<GraphNotification>(requestBody);
             foreach (var notification in data.value)
             {
-                log.LogInformation($"Received notification: '{notification.Resource}', {notification.Id}");
+               if (notification.Resource.Any())
+                {
+                    log.LogInformation($"Missed Notification Event Called: '{notification.Resource}', {notification.Id}");
+
+                }
+
+                if(notification.LifecycleEvent.HasValue)
+                {
+                    log.LogInformation($"Missed notification Alert: '{notification.LifecycleEvent}', {notification.SubscriptionExpirationDateTime}");
+                }
             }
 
             if (!data.value.FirstOrDefault().ClientState.Equals("SecretClientState", StringComparison.OrdinalIgnoreCase))
