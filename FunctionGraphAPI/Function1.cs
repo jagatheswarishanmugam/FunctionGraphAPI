@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace FunctionGraphAPI
 {
@@ -19,36 +20,43 @@ namespace FunctionGraphAPI
             ILogger log)
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
+            var config = new ConfigurationBuilder().AddEnvironmentVariables()
+                .Build();
 
             // parse query parameter
             var validationToken = req.Query["validationToken"];
+
+            var secret = config["MySecret"]; // Stored the secret in the keyvault
+
             log.LogInformation(validationToken);
             if (!string.IsNullOrEmpty(validationToken))
             {
-
+               
                 log.LogInformation("validationToken: " + validationToken);
                 log.LogInformation("Sending validation token");
                
                 return new ContentResult { Content = validationToken, ContentType = "text/plain" };
             }
 
+            
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<GraphNotification>(requestBody);
             foreach (var notification in data.value)
             {
                 if (notification.Resource.Any())
                 {
-                    log.LogInformation($"Missed Notification Event Called: '{notification.Resource}', {notification.Id}");
-
+                    log.LogInformation($"Recived Notification : '{notification.Resource}', {notification.Id}");
+                    log.LogInformation("Change Type" + notification.ChangeType.Value.ToString());
                 }
 
                 if(notification.LifecycleEvent.HasValue)
                 {
                     log.LogInformation($"Missed notification Alert: '{notification.LifecycleEvent}', {notification.SubscriptionExpirationDateTime}");
+                    log.LogInformation("Missed Type" + notification.LifecycleEvent.Value.ToString());
                 }
             }
 
-            if (!data.value.FirstOrDefault().ClientState.Equals("SecretClientState", StringComparison.OrdinalIgnoreCase))
+            if (!data.value.FirstOrDefault().ClientState.Equals(secret, StringComparison.OrdinalIgnoreCase))
             {
                 log.LogInformation("client state not valid");
                 //client state is not valid (doesn't much the one submitted with the subscription)
